@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>관리자 제어판</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+</head>
+<body>
+    <h2>환율 수정</h2>
+    <input type="number" id="newR" placeholder="환율 입력">
+    <button onclick="save()">저장하고 즉시 반영</button>
+    <script>
+        const db = firebase.initializeApp({ databaseURL: "https://chinaboss-calc-default-rtdb.firebaseio.com/" }).database();
+        function save() {
+            db.ref('settings').set({ rate: document.getElementById('newR').value });
+            alert("반영 완료!");
+        }
+    </script>
+</body>
+</html>
