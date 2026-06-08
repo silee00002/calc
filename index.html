@@ -2,12 +2,13 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>차이나는형님 대행 계산기</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <style>
-        body { font-family: 'Malgun Gothic', sans-serif; background: #f4f4f4; display: flex; justify-content: center; padding: 20px; }
-        .card { background: #fff; width: 100%; max-width: 400px; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        body { font-family: 'Malgun Gothic', sans-serif; background: #f4f4f4; display: flex; justify-content: center; padding: 10px; margin: 0; }
+        .card { background: #fff; width: 100%; max-width: 500px; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); box-sizing: border-box; }
         .title { text-align: center; font-size: 1.3em; font-weight: bold; margin-bottom: 20px; }
         .tabs { display: flex; gap: 5px; margin-bottom: 20px; border: 1px solid #ddd; padding: 5px; border-radius: 8px; }
         .tab-btn { flex: 1; padding: 12px; border: none; background: #eee; cursor: pointer; font-weight: bold; border-radius: 5px; }
@@ -16,10 +17,10 @@
         .sub-tab { flex: 1; text-align: center; padding: 10px; color: #555; cursor: pointer; }
         .sub-tab.active { color: #007bff; border-bottom: 2px solid #007bff; font-weight: bold; }
         .rate-box { background: #eee; padding: 12px; text-align: center; font-weight: bold; margin-bottom: 15px; border-radius: 5px; }
-        input { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
+        input { width: 100%; padding: 15px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; font-size: 16px; }
         .fee-info { background: #eee; padding: 10px; margin-bottom: 15px; border-radius: 5px; font-size: 0.9em; text-align: center; color: #333; border: 1px solid #ccc; }
-        .result-box { background: #f0f0f0; padding: 15px; border-radius: 8px; font-size: 0.9em; color: #333; line-height: 1.8; border: 1px dashed #ccc; }
-        .copy-btn { width: 100%; background: #558b2f; color: white; border: none; padding: 15px; border-radius: 5px; font-weight: bold; margin-top: 15px; cursor: pointer; }
+        .result-box { background: #f0f0f0; padding: 15px; border-radius: 8px; font-size: 0.95em; color: #333; line-height: 1.8; border: 1px dashed #ccc; }
+        .copy-btn { width: 100%; background: #558b2f; color: white; border: none; padding: 15px; border-radius: 5px; font-weight: bold; margin-top: 15px; cursor: pointer; font-size: 16px; }
     </style>
 </head>
 <body>
@@ -75,18 +76,14 @@
                 else { krw = Math.floor(cny * currentRate) + (40 * currentRate); policy = "800위안 미만 소액 고정 수수료 (40위안) 적용"; }
             }
         } else {
-            // 한국돈 입력 시 역산
             krw = val;
+            let convertedCNY = val / currentRate;
             if (mode === '페이') {
-                // 800위안 기준 역산
-                let limit = 800 * currentRate * 1.03;
-                if (val >= limit) { cny = Math.floor(val / (currentRate * 1.03)); policy = "800위안 이상 원화기준 기본수수료(3%) 선차감 후 정산"; }
-                else { cny = Math.floor((val / currentRate) - 25); policy = "800위안 미만 원화기준 소액 고정수수료(25위안) 선차감 후 정산"; }
+                if (convertedCNY >= 800) { cny = Math.floor(convertedCNY * 0.97); policy = "800위안 이상 원화기준 기본수수료(3%) 선차감 후 정산"; }
+                else { cny = Math.floor(convertedCNY - 25); policy = "800위안 미만 원화기준 소액 고정수수료(25위안) 선차감 후 정산"; }
             } else {
-                // 구매대행 역산
-                let limit = 800 * currentRate * 1.05;
-                if (val >= limit) { cny = Math.floor(val / (currentRate * 1.05)); policy = "800위안 이상 원화기준 기본수수료(5%) 선차감 후 정산"; }
-                else { cny = Math.floor((val / currentRate) - 40); policy = "800위안 미만 원화기준 소액 고정수수료(40위안) 선차감 후 정산"; }
+                if (convertedCNY >= 800) { cny = Math.floor(convertedCNY * 0.95); policy = "800위안 이상 원화기준 기본수수료(5%) 선차감 후 정산"; }
+                else { cny = Math.floor(convertedCNY - 40); policy = "800위안 미만 원화기준 소액 고정수수료(40위안) 선차감 후 정산"; }
             }
         }
 
