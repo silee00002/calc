@@ -43,11 +43,12 @@
 
 <script>
     const db = firebase.initializeApp({ databaseURL: "https://calc-f903b-default-rtdb.firebaseio.com/" }).database();
-    let currentRate = 0, mode = '페이', inputType = 'CNY';
+    let settings = { rate: 0, pRate: 3, pFixed: 25, bRate: 5, bFixed: 40, bank: "" };
+    let mode = '페이', inputType = 'CNY';
 
     db.ref('settings').on('value', (s) => {
-        currentRate = s.val().rate;
-        document.getElementById('rateText').innerText = "오늘의 적용 환율: " + parseFloat(currentRate).toLocaleString() + " 원";
+        settings = s.val();
+        document.getElementById('rateText').innerText = "오늘의 적용 환율: " + parseFloat(settings.rate).toLocaleString() + " 원";
         runCalc();
     });
 
@@ -65,30 +66,34 @@
     function runCalc() {
         const val = parseFloat(document.getElementById('amt').value) || 0;
         let cny = 0, krw = 0, policy = "";
+        const pRate = settings.pRate || 3;
+        const pFixed = settings.pFixed || 25;
+        const bRate = settings.bRate || 5;
+        const bFixed = settings.bFixed || 40;
 
         if (inputType === 'CNY') {
             cny = val;
             if (mode === '페이') {
-                if (cny >= 800) { krw = Math.floor(cny * currentRate * 1.03); policy = "기본 대행 수수료 (3%) 적용"; }
-                else { krw = Math.floor(cny * currentRate) + (25 * currentRate); policy = "800위안 미만 소액 고정 수수료 (25위안) 적용"; }
+                if (cny >= 800) { krw = Math.floor(cny * settings.rate * (1 + pRate/100)); policy = `기본 대행 수수료 (${pRate}%) 적용`; }
+                else { krw = Math.floor(cny * settings.rate) + (pFixed * settings.rate); policy = `800위안 미만 소액 고정 수수료 (${pFixed}위안) 적용`; }
             } else {
-                if (cny >= 800) { krw = Math.floor(cny * currentRate * 1.05); policy = "기본 대행 수수료 (5%) 적용"; }
-                else { krw = Math.floor(cny * currentRate) + (40 * currentRate); policy = "800위안 미만 소액 고정 수수료 (40위안) 적용"; }
+                if (cny >= 800) { krw = Math.floor(cny * settings.rate * (1 + bRate/100)); policy = `기본 대행 수수료 (${bRate}%) 적용`; }
+                else { krw = Math.floor(cny * settings.rate) + (bFixed * settings.rate); policy = `800위안 미만 소액 고정 수수료 (${bFixed}위안) 적용`; }
             }
         } else {
             krw = val;
-            let convertedCNY = val / currentRate;
+            let convertedCNY = val / settings.rate;
             if (mode === '페이') {
-                if (convertedCNY >= 800) { cny = Math.floor(convertedCNY * 0.97); policy = "800위안 이상 원화기준 기본수수료(3%) 선차감 후 정산"; }
-                else { cny = Math.floor(convertedCNY - 25); policy = "800위안 미만 원화기준 소액 고정수수료(25위안) 선차감 후 정산"; }
+                if (convertedCNY >= 800) { cny = Math.floor(convertedCNY * (1 - pRate/100)); policy = `800위안 이상 원화기준 수수료(${pRate}%) 선차감 후 정산`; }
+                else { cny = Math.floor(convertedCNY - pFixed); policy = `800위안 미만 원화기준 소액 고정수수료(${pFixed}위안) 선차감 후 정산`; }
             } else {
-                if (convertedCNY >= 800) { cny = Math.floor(convertedCNY * 0.95); policy = "800위안 이상 원화기준 기본수수료(5%) 선차감 후 정산"; }
-                else { cny = Math.floor(convertedCNY - 40); policy = "800위안 미만 원화기준 소액 고정수수료(40위안) 선차감 후 정산"; }
+                if (convertedCNY >= 800) { cny = Math.floor(convertedCNY * (1 - bRate/100)); policy = `800위안 이상 원화기준 수수료(${bRate}%) 선차감 후 정산`; }
+                else { cny = Math.floor(convertedCNY - bFixed); policy = `800위안 미만 원화기준 소액 고정수수료(${bFixed}위안) 선차감 후 정산`; }
             }
         }
 
         document.getElementById('feeInfo').innerText = policy;
-        document.getElementById('res').innerHTML = `[차이나는형님 ${mode}대행 신청서]<br>--------------------------<br>• 신청 구분: ${inputType === 'CNY' ? '위안화' : '원화 맞춤 충전'} 신청<br>• 적용 환율: ${currentRate} 원<br>• 수수료 정책: ${policy}<br>• 중국 송금액: ${cny.toLocaleString()} 위안 (CNY)<br>• 최종 입금액: ${krw.toLocaleString()} 원 (KRW)<br>--------------------------<br>• 입금 계좌: 우리은행 1002-264-737229 이성일<br>--------------------------<br>※ 입금 후 본 신청서를 대화방에 붙여넣어 주시면 5분 내 초고속 처리됩니다! ⚡`;
+        document.getElementById('res').innerHTML = `[차이나는형님 ${mode}대행 신청서]<br>--------------------------<br>• 신청 구분: ${inputType === 'CNY' ? '위안화' : '원화 맞춤 충전'} 신청<br>• 적용 환율: ${settings.rate} 원<br>• 수수료 정책: ${policy}<br>• 중국 송금액: ${cny.toLocaleString()} 위안 (CNY)<br>• 최종 입금액: ${krw.toLocaleString()} 원 (KRW)<br>--------------------------<br>• 입금 계좌: ${settings.bank}<br>--------------------------<br>※ 입금 후 본 신청서를 대화방에 붙여넣어 주시면 5분 내 초고속 처리됩니다! ⚡`;
     }
 
     function copyRes() {
