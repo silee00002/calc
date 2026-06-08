@@ -28,7 +28,7 @@
 </div>
 
 <script>
-    const db = firebase.initializeApp({ databaseURL: "https://chinaboss-calc-default-rtdb.firebaseio.com/" }).database();
+    const db = firebase.initializeApp({ databaseURL: "https://calc-f903b-default-rtdb.firebaseio.com/" }).database();
     let mode = '페이', fee = 3, rate = 0;
 
     db.ref('settings').on('value', (s) => {
