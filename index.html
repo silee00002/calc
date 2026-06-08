@@ -63,7 +63,7 @@
 
     function runCalc() {
         const val = parseFloat(document.getElementById('amt').value) || 0;
-        let cny = 0, krw = 0, feeText = "", policy = "";
+        let cny = 0, krw = 0, policy = "";
 
         if (inputType === 'CNY') {
             cny = val;
@@ -75,13 +75,23 @@
                 else { krw = Math.floor(cny * currentRate) + (40 * currentRate); policy = "800위안 미만 소액 고정 수수료 (40위안) 적용"; }
             }
         } else {
+            // 한국돈 입력 시 역산
             krw = val;
-            cny = Math.floor(val / (currentRate * (mode === '페이' ? 1.03 : 1.05)));
-            policy = "한국돈 역산 기준";
+            if (mode === '페이') {
+                // 800위안 기준 역산
+                let limit = 800 * currentRate * 1.03;
+                if (val >= limit) { cny = Math.floor(val / (currentRate * 1.03)); policy = "800위안 이상 원화기준 기본수수료(3%) 선차감 후 정산"; }
+                else { cny = Math.floor((val / currentRate) - 25); policy = "800위안 미만 원화기준 소액 고정수수료(25위안) 선차감 후 정산"; }
+            } else {
+                // 구매대행 역산
+                let limit = 800 * currentRate * 1.05;
+                if (val >= limit) { cny = Math.floor(val / (currentRate * 1.05)); policy = "800위안 이상 원화기준 기본수수료(5%) 선차감 후 정산"; }
+                else { cny = Math.floor((val / currentRate) - 40); policy = "800위안 미만 원화기준 소액 고정수수료(40위안) 선차감 후 정산"; }
+            }
         }
 
         document.getElementById('feeInfo').innerText = policy;
-        document.getElementById('res').innerHTML = `[차이나는형님 ${mode}대행 신청서]<br>--------------------------<br>• 신청 구분: ${inputType === 'CNY' ? '위안화' : '한국돈'} 지정 신청<br>• 적용 환율: ${currentRate} 원<br>• 수수료 정책: ${policy}<br>• 중국 송금액: ${cny.toLocaleString()} 위안 (CNY)<br>• 최종 입금액: ${krw.toLocaleString()} 원 (KRW)<br>--------------------------<br>• 입금 계좌: 우리은행 1002-264-737229 이성일<br>--------------------------<br>※ 입금 후 본 신청서를 대화방에 붙여넣어 주시면 5분 내 초고속 처리됩니다! ⚡`;
+        document.getElementById('res').innerHTML = `[차이나는형님 ${mode}대행 신청서]<br>--------------------------<br>• 신청 구분: ${inputType === 'CNY' ? '위안화' : '원화 맞춤 충전'} 신청<br>• 적용 환율: ${currentRate} 원<br>• 수수료 정책: ${policy}<br>• 중국 송금액: ${cny.toLocaleString()} 위안 (CNY)<br>• 최종 입금액: ${krw.toLocaleString()} 원 (KRW)<br>--------------------------<br>• 입금 계좌: 우리은행 1002-264-737229 이성일<br>--------------------------<br>※ 입금 후 본 신청서를 대화방에 붙여넣어 주시면 5분 내 초고속 처리됩니다! ⚡`;
     }
 
     function copyRes() {
