@@ -2,38 +2,79 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>차이나는형님 계산기</title>
+    <title>차이나는형님 대행 계산기</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <style>
-        body { font-family: sans-serif; padding: 20px; max-width: 400px; margin: auto; }
-        .input-box { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; box-sizing: border-box; }
-        .result-box { background: #f9f9f9; padding: 15px; border: 1px dashed #999; margin-top: 10px; white-space: pre-line; }
+        body { font-family: 'Malgun Gothic', sans-serif; background: #f4f4f4; display: flex; justify-content: center; padding: 20px; }
+        .card { background: #fff; width: 100%; max-width: 400px; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .title { text-align: center; font-size: 1.2em; font-weight: bold; margin-bottom: 20px; }
+        .tabs { display: flex; gap: 5px; margin-bottom: 20px; border: 1px solid #ddd; padding: 5px; border-radius: 8px; }
+        .tab-btn { flex: 1; padding: 10px; border: none; background: transparent; cursor: pointer; font-weight: bold; }
+        .tab-btn.active { background: #eee; border-radius: 5px; }
+        .sub-tabs { display: flex; border-bottom: 2px solid #eee; margin-bottom: 15px; }
+        .sub-tab { flex: 1; text-align: center; padding: 10px; color: #555; }
+        .sub-tab.active { color: #007bff; border-bottom: 2px solid #007bff; }
+        .rate-box { background: #eee; padding: 12px; text-align: center; font-weight: bold; margin-bottom: 15px; border-radius: 5px; }
+        input { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
+        .result-box { background: #f0f0f0; padding: 15px; border-radius: 8px; font-size: 0.9em; color: #333; line-height: 1.6; border: 1px dashed #ccc; }
+        .copy-btn { width: 100%; background: #558b2f; color: white; border: none; padding: 15px; border-radius: 5px; font-weight: bold; margin-top: 15px; cursor: pointer; }
     </style>
 </head>
 <body>
-    <h3>⚡ 차이나는형님 대행 계산기</h3>
-    <div id="rateText">환율 로딩 중...</div>
-    <input type="number" id="cny" class="input-box" placeholder="위안(CNY) 입력" oninput="calc()">
-    <div id="res" class="result-box">금액을 입력하면 신청서가 나타납니다.</div>
-    <button onclick="copy()" style="width:100%; padding:15px; margin-top:10px;">📋 신청서 복사하기</button>
+<div class="card">
+    <div class="title">⚡ 차이나는형님 대행 계산기</div>
+    
+    <div class="tabs">
+        <button id="pBtn" class="tab-btn active" onclick="setMode('페이', 'fee1', 'small1')">💰 페이대행(3%)</button>
+        <button id="bBtn" class="tab-btn" onclick="setMode('구매', 'fee2', 'small2')">📦 구매대행(5%)</button>
+    </div>
 
-    <script>
-        const db = firebase.initializeApp({ databaseURL: "https://calc-f903b-default-rtdb.firebaseio.com/" }).database();
-        let settings = { rate: 0, fee1: 3, fee2: 5 };
-        
-        db.ref('settings').on('value', (s) => {
-            settings = s.val();
-            document.getElementById('rateText').innerText = "현재 환율: " + settings.rate + "원";
-            calc();
-        });
+    <div class="sub-tabs">
+        <div class="sub-tab active">위안화(CNY) 입력</div>
+        <div class="sub-tab">한국돈(KRW) 입력</div>
+    </div>
 
-        function calc() {
-            const cny = document.getElementById('cny').value;
-            const total = Math.floor(cny * settings.rate * (1 + settings.fee1/100)); // 페이 기준
-            document.getElementById('res').innerText = `[신청서]\n환율: ${settings.rate}\n입금액: ${total.toLocaleString()}원`;
-        }
-        function copy() { navigator.clipboard.writeText(document.getElementById('res').innerText); alert("복사 완료!"); }
-    </script>
+    <div class="rate-box" id="rateText">오늘의 실시간 환율 로딩 중...</div>
+    
+    <input type="number" id="amt" placeholder="신청할 중국돈 금액 (위안)" oninput="runCalc()">
+    
+    <div class="result-box" id="res">
+        [차이나는형님 대행 신청서]<br>
+        금액을 입력하면 신청서가 나타납니다.
+    </div>
+
+    <button class="copy-btn" onclick="copyRes()">📋 신청서 양식 복사하기</button>
+</div>
+
+<script>
+    const db = firebase.initializeApp({ databaseURL: "https://calc-f903b-default-rtdb.firebaseio.com/" }).database();
+    let mode = '페이', feeKey = 'fee1', smallKey = 'small1', settings = {rate:0, fee1:3, small1:25, fee2:5, small2:40, account:''};
+
+    db.ref('settings').on('value', (s) => {
+        settings = s.val();
+        document.getElementById('rateText').innerText = "오늘의 실시간 환율: " + settings.rate + " 원";
+        runCalc();
+    });
+
+    function setMode(m, fk, sk) {
+        mode = m; feeKey = fk; smallKey = sk;
+        document.getElementById('pBtn').className = (m === '페이' ? 'tab-btn active' : 'tab-btn');
+        document.getElementById('bBtn').className = (m === '구매' ? 'tab-btn active' : 'tab-btn');
+        runCalc();
+    }
+
+    function runCalc() {
+        const cny = document.getElementById('amt').value || 0;
+        const total = Math.floor(cny * settings.rate * (1 + settings[feeKey]/100)) + parseInt(settings[smallKey] || 0);
+        document.getElementById('res').innerHTML = `[차이나는형님 ${mode}대행 신청서]<br>--------------------------<br>• 신청 구분: 위안화 지정 신청<br>• 적용 환율: ${settings.rate} 원<br>• 수수료 정책: 대행 수수료 (${settings[feeKey]}%) 적용<br>• 중국 송금액: ${parseInt(cny).toLocaleString()} 위안 (CNY)<br>• 최종 입금액: ${total.toLocaleString()} 원 (KRW)<br>--------------------------<br>• 입금 계좌: ${settings.account}<br>--------------------------<br>※ 입금 후 본 신청서를 대화방에 붙여넣어 주시면 5분 내 초고속 처리됩니다! ⚡`;
+    }
+
+    function copyRes() {
+        const text = document.getElementById('res').innerText;
+        navigator.clipboard.writeText(text);
+        alert("신청서가 복사되었습니다!");
+    }
+</script>
 </body>
 </html>
