@@ -8,33 +8,35 @@
     <style>
         body { font-family: 'Malgun Gothic', sans-serif; background: #f4f4f4; display: flex; justify-content: center; padding: 20px; }
         .card { background: #fff; width: 100%; max-width: 400px; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .title { text-align: center; font-size: 1.3em; font-weight: bold; margin-bottom: 20px; }
         .tabs { display: flex; gap: 5px; margin-bottom: 20px; border: 1px solid #ddd; padding: 5px; border-radius: 8px; }
-        .tab-btn { flex: 1; padding: 10px; border: none; background: #eee; cursor: pointer; font-weight: bold; border-radius: 5px; }
-        .tab-btn.active { background: #ffca28; }
-        .input-group { margin-bottom: 15px; }
-        .sub-tabs { display: flex; margin-bottom: 10px; cursor: pointer; }
-        .sub-tab { flex: 1; text-align: center; padding: 8px; background: #ddd; border-radius: 4px; margin-right: 5px; font-size: 0.9em; }
-        .sub-tab.active { background: #558b2f; color: white; }
-        input { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
-        .result-box { background: #f0f0f0; padding: 15px; border-radius: 8px; font-size: 0.9em; border: 1px dashed #ccc; }
+        .tab-btn { flex: 1; padding: 12px; border: none; background: #eee; cursor: pointer; font-weight: bold; border-radius: 5px; }
+        .tab-btn.active { background: #fff; border: 1px solid #ddd; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .sub-tabs { display: flex; margin-bottom: 15px; border-bottom: 1px solid #ddd; }
+        .sub-tab { flex: 1; text-align: center; padding: 10px; color: #555; cursor: pointer; }
+        .sub-tab.active { color: #007bff; border-bottom: 2px solid #007bff; font-weight: bold; }
+        .rate-box { background: #eee; padding: 12px; text-align: center; font-weight: bold; margin-bottom: 15px; border-radius: 5px; }
+        input { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
+        .fee-info { background: #eee; padding: 10px; margin-bottom: 15px; border-radius: 5px; font-size: 0.9em; text-align: center; color: #333; border: 1px solid #ccc; }
+        .result-box { background: #f0f0f0; padding: 15px; border-radius: 8px; font-size: 0.9em; color: #333; line-height: 1.8; border: 1px dashed #ccc; }
         .copy-btn { width: 100%; background: #558b2f; color: white; border: none; padding: 15px; border-radius: 5px; font-weight: bold; margin-top: 15px; cursor: pointer; }
     </style>
 </head>
 <body>
 <div class="card">
-    <div style="text-align:center; font-weight:bold; margin-bottom:20px;">⚡ 차이나는형님 대행 계산기</div>
+    <div class="title">⚡ 차이나는형님 대행 계산기</div>
     <div class="tabs">
         <button id="pBtn" class="tab-btn active" onclick="changeMode('페이')">💰 페이대행</button>
         <button id="bBtn" class="tab-btn" onclick="changeMode('구매')">📦 구매대행</button>
     </div>
-
     <div class="sub-tabs">
-        <div id="tabCNY" class="sub-tab active" onclick="changeInput('CNY')">중국돈(CNY) 계산</div>
-        <div id="tabKRW" class="sub-tab" onclick="changeInput('KRW')">한국돈(KRW) 계산</div>
+        <div id="tabCNY" class="sub-tab active" onclick="changeInput('CNY')">위안화(CNY) 입력</div>
+        <div id="tabKRW" class="sub-tab" onclick="changeInput('KRW')">한국돈(KRW) 입력</div>
     </div>
-
+    <div class="rate-box" id="rateText">오늘의 적용 환율: 0원</div>
     <input type="number" id="amt" placeholder="금액을 입력하세요" oninput="runCalc()">
-    <div class="result-box" id="res">금액을 입력하면 결과가 나타납니다.</div>
+    <div class="fee-info" id="feeInfo">수수료 기준</div>
+    <div class="result-box" id="res">신청서가 여기에 나타납니다.</div>
     <button class="copy-btn" onclick="copyRes()">📋 신청서 양식 복사하기</button>
 </div>
 
@@ -44,48 +46,47 @@
 
     db.ref('settings').on('value', (s) => {
         currentRate = s.val().rate;
+        document.getElementById('rateText').innerText = "오늘의 적용 환율: " + parseFloat(currentRate).toLocaleString() + " 원";
         runCalc();
     });
 
-    function changeMode(m) { mode = m; updateTabUI(); runCalc(); }
-    function changeInput(t) { inputType = t; updateTabUI(); runCalc(); }
+    function changeMode(m) { mode = m; updateUI(); runCalc(); }
+    function changeInput(t) { inputType = t; updateUI(); runCalc(); }
 
-    function updateTabUI() {
+    function updateUI() {
         document.getElementById('pBtn').className = (mode === '페이' ? 'tab-btn active' : 'tab-btn');
         document.getElementById('bBtn').className = (mode === '구매' ? 'tab-btn active' : 'tab-btn');
         document.getElementById('tabCNY').className = (inputType === 'CNY' ? 'sub-tab active' : 'sub-tab');
         document.getElementById('tabKRW').className = (inputType === 'KRW' ? 'sub-tab active' : 'sub-tab');
-        document.getElementById('amt').placeholder = (inputType === 'CNY' ? '신청할 중국돈(위안) 입력' : '보내실 한국돈(원) 입력');
+        document.getElementById('amt').placeholder = (inputType === 'CNY' ? '신청할 중국돈 금액 (위안)' : '보내실 한국돈 금액 (원)');
     }
 
     function runCalc() {
         const val = parseFloat(document.getElementById('amt').value) || 0;
-        let cny = 0, krw = 0, feeText = "";
+        let cny = 0, krw = 0, feeText = "", policy = "";
 
         if (inputType === 'CNY') {
             cny = val;
-            const feeRate = (mode === '페이' ? 0.03 : 0.05);
-            const smallFee = (mode === '페이' ? 25 : 40);
-            if (cny >= 800) {
-                krw = Math.floor(cny * currentRate * (1 + feeRate));
-                feeText = (mode === '페이' ? "수수료 3%" : "수수료 5%");
+            if (mode === '페이') {
+                if (cny >= 800) { krw = Math.floor(cny * currentRate * 1.03); policy = "기본 대행 수수료 (3%) 적용"; }
+                else { krw = Math.floor(cny * currentRate) + (25 * currentRate); policy = "800위안 미만 소액 고정 수수료 (25위안) 적용"; }
             } else {
-                krw = Math.floor(cny * currentRate) + (smallFee * currentRate);
-                feeText = `소액 수수료(${smallFee}위안)`;
+                if (cny >= 800) { krw = Math.floor(cny * currentRate * 1.05); policy = "기본 대행 수수료 (5%) 적용"; }
+                else { krw = Math.floor(cny * currentRate) + (40 * currentRate); policy = "800위안 미만 소액 고정 수수료 (40위안) 적용"; }
             }
         } else {
-            // 한국돈 입력 시: 중국돈으로 역산 (수수료 대략 계산)
-            cny = Math.floor(val / (currentRate * (mode === '페이' ? 1.03 : 1.05)));
             krw = val;
-            feeText = "한국돈 기준 계산";
+            cny = Math.floor(val / (currentRate * (mode === '페이' ? 1.03 : 1.05)));
+            policy = "한국돈 역산 기준";
         }
 
-        document.getElementById('res').innerHTML = `[차이나는형님 ${mode}대행 신청서]<br>• 적용 환율: ${currentRate}원<br>• 수수료 정책: ${feeText}<br>• 중국 송금액: ${cny.toLocaleString()} 위안<br>• 최종 입금액: ${krw.toLocaleString()} 원<br>• 계좌: 1002-264-737229 우리은행 이성일`;
+        document.getElementById('feeInfo').innerText = policy;
+        document.getElementById('res').innerHTML = `[차이나는형님 ${mode}대행 신청서]<br>--------------------------<br>• 신청 구분: ${inputType === 'CNY' ? '위안화' : '한국돈'} 지정 신청<br>• 적용 환율: ${currentRate} 원<br>• 수수료 정책: ${policy}<br>• 중국 송금액: ${cny.toLocaleString()} 위안 (CNY)<br>• 최종 입금액: ${krw.toLocaleString()} 원 (KRW)<br>--------------------------<br>• 입금 계좌: 우리은행 1002-264-737229 이성일<br>--------------------------<br>※ 입금 후 본 신청서를 대화방에 붙여넣어 주시면 5분 내 초고속 처리됩니다! ⚡`;
     }
 
     function copyRes() {
         navigator.clipboard.writeText(document.getElementById('res').innerText);
-        alert("복사되었습니다!");
+        alert("신청서가 복사되었습니다!");
     }
 </script>
 </body>
