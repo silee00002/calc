@@ -62,6 +62,7 @@
                 feeText = "소액 수수료(25위안) 적용";
             }
         } else {
+            // 구매대행: 800위안 이상 5%, 미만 40위안
             if (cny >= 800) {
                 finalPrice = Math.floor(cny * currentRate * 1.05);
                 feeText = "수수료 5% 적용";
