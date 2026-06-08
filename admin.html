@@ -6,45 +6,73 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <style>
-        body { font-family: 'Malgun Gothic', sans-serif; background: #fdf6e3; padding: 20px; display: flex; justify-content: center; }
-        .card { background: #fff; width: 100%; max-width: 450px; padding: 25px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border: 1px solid #ffe082; }
-        .title { font-size: 1.2em; font-weight: bold; margin-bottom: 20px; color: #5d4037; border-left: 5px solid #ffca28; padding-left: 10px; }
+        body { font-family: 'Malgun Gothic', sans-serif; background-color: #f8f9fa; display: flex; justify-content: center; padding: 20px; }
+        .card { background: #fffdf2; width: 100%; max-width: 500px; padding: 30px; border-radius: 10px; border: 1px solid #e1e1e1; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .title { font-size: 1.2em; font-weight: bold; margin-bottom: 25px; color: #333; display: flex; align-items: center; }
+        .title::before { content: "🔒"; margin-right: 8px; }
         label { display: block; font-size: 0.9em; font-weight: bold; margin: 15px 0 5px; color: #333; }
-        input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; background: #fafafa; }
-        .save-btn { width: 100%; background: #4caf50; color: white; border: none; padding: 18px; border-radius: 8px; font-weight: bold; margin-top: 25px; cursor: pointer; font-size: 1.1em; }
+        input { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; background: #fff; }
+        .save-btn { width: 100%; background: #5a9e5a; color: white; border: none; padding: 15px; border-radius: 4px; font-weight: bold; margin-top: 30px; cursor: pointer; font-size: 1.1em; }
     </style>
 </head>
 <body>
+
 <div class="card">
-    <div class="title">🔐 사장님 전용 통합 관리자 제어판</div>
-    <label>오늘의 적용 환율 (원)</label>
+    <div class="title">사장님 전용 통합 관리자 제어판</div>
+    
+    <label>오늘의 적용 환율 직접 입력 (원)</label>
     <input type="number" id="rate">
-    <label>페이 수수료율 (%)</label>
-    <input type="number" id="pRate">
-    <label>페이 소액고정 (위안)</label>
-    <input type="number" id="pFixed">
-    <label>구매 수수료율 (%)</label>
-    <input type="number" id="bRate">
-    <label>구매 소액고정 (위안)</label>
-    <input type="number" id="bFixed">
+    
+    <div style="display: flex; gap: 10px;">
+        <div style="flex: 1;">
+            <label>💰 페이 수수료율 (%)</label>
+            <input type="number" id="pRate">
+        </div>
+        <div style="flex: 1;">
+            <label>💰 페이 소액고정 (위안)</label>
+            <input type="number" id="pFixed">
+        </div>
+    </div>
+
+    <div style="display: flex; gap: 10px;">
+        <div style="flex: 1;">
+            <label>📦 구매 수수료율 (%)</label>
+            <input type="number" id="bRate">
+        </div>
+        <div style="flex: 1;">
+            <label>📦 구매 소액고정 (위안)</label>
+            <input type="number" id="bFixed">
+        </div>
+    </div>
+
     <label>입금 받으실 원화 계좌번호</label>
     <input type="text" id="bank">
+    
     <button class="save-btn" onclick="saveSettings()">💾 모든 수정 내용 저장 및 즉시 적용</button>
 </div>
 
 <script>
-    const db = firebase.initializeApp({ databaseURL: "https://calc-f903b-default-rtdb.firebaseio.com/" }).database();
-    
+    // [중요] 사장님의 Firebase 주소로 변경해주세요
+    const firebaseConfig = {
+        databaseURL: "https://calc-f903b-default-rtdb.firebaseio.com/"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // 데이터 불러오기
     db.ref('settings').on('value', (s) => {
         const v = s.val();
-        document.getElementById('rate').value = v.rate;
-        document.getElementById('pRate').value = v.pRate;
-        document.getElementById('pFixed').value = v.pFixed;
-        document.getElementById('bRate').value = v.bRate;
-        document.getElementById('bFixed').value = v.bFixed;
-        document.getElementById('bank').value = v.bank;
+        if(v) {
+            document.getElementById('rate').value = v.rate;
+            document.getElementById('pRate').value = v.pRate;
+            document.getElementById('pFixed').value = v.pFixed;
+            document.getElementById('bRate').value = v.bRate;
+            document.getElementById('bFixed').value = v.bFixed;
+            document.getElementById('bank').value = v.bank;
+        }
     });
 
+    // 데이터 저장하기
     function saveSettings() {
         db.ref('settings').set({
             rate: parseFloat(document.getElementById('rate').value),
@@ -53,8 +81,9 @@
             bRate: parseFloat(document.getElementById('bRate').value),
             bFixed: parseFloat(document.getElementById('bFixed').value),
             bank: document.getElementById('bank').value
+        }).then(() => {
+            alert("설정이 저장되었습니다!");
         });
-        alert("설정이 저장되었습니다!");
     }
 </script>
 </body>
