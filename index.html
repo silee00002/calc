@@ -1,83 +1,9 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>차이나는형님 대행 계산기</title>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-    <style>
-        body { font-family: 'Malgun Gothic', sans-serif; background: #f4f4f4; display: flex; justify-content: center; padding: 10px; margin: 0; }
-        .card { background: #fff; width: 95%; max-width: 500px; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); box-sizing: border-box; }
-        .title { text-align: center; font-size: 1.3em; font-weight: bold; margin-bottom: 20px; user-select: none; }
-        .tabs { display: flex; gap: 5px; margin-bottom: 20px; border: 1px solid #ddd; padding: 5px; border-radius: 8px; }
-        .tab-btn { flex: 1; padding: 12px; border: none; background: #eee; cursor: pointer; font-weight: bold; border-radius: 5px; }
-        .tab-btn.active { background: #fff; border: 1px solid #ddd; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .sub-tabs { display: flex; margin-bottom: 15px; border-bottom: 1px solid #ddd; }
-        .sub-tab { flex: 1; text-align: center; padding: 10px; color: #555; cursor: pointer; }
-        .sub-tab.active { color: #007bff; border-bottom: 2px solid #007bff; font-weight: bold; }
-        .rate-box { background: #eee; padding: 12px; text-align: center; font-weight: bold; margin-bottom: 15px; border-radius: 5px; }
-        input { width: 100%; padding: 15px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; font-size: 16px; }
-        .fee-info { background: #eee; padding: 10px; margin-bottom: 15px; border-radius: 5px; font-size: 0.9em; text-align: center; color: #333; border: 1px solid #ccc; font-weight: bold; }
-        .result-box { background: #f0f0f0; padding: 15px; border-radius: 8px; font-size: 0.95em; color: #333; line-height: 1.8; border: 1px dashed #ccc; }
-        .copy-btn { width: 100%; background: #558b2f; color: white; border: none; padding: 15px; border-radius: 5px; font-weight: bold; margin-top: 15px; cursor: pointer; font-size: 16px; }
-    </style>
-</head>
-<body>
-<div class="card">
-    <div class="title">
-        <span onclick="openAdmin()" style="cursor: pointer;">⚡</span> 차이나는형님 대행 계산기
-    </div>
-    <div class="tabs">
-        <button id="pBtn" class="tab-btn active" onclick="changeMode('페이')">💰 페이대행</button>
-        <button id="bBtn" class="tab-btn" onclick="changeMode('구매')">📦 구매대행</button>
-    </div>
-    <div class="sub-tabs">
-        <div id="tabCNY" class="sub-tab active" onclick="changeInput('CNY')">위안화(CNY) 입력</div>
-        <div id="tabKRW" class="sub-tab" onclick="changeInput('KRW')">한국돈(KRW) 입력</div>
-    </div>
-    <div class="rate-box" id="rateText">오늘의 적용 환율: 0원</div>
-    <input type="number" id="amt" placeholder="금액을 입력하세요" oninput="runCalc()">
-    <div class="fee-info" id="feeInfo">수수료 기준</div>
-    <div class="result-box" id="res">신청서가 여기에 나타납니다.</div>
-    <button class="copy-btn" onclick="copyRes()">📋 신청서 양식 복사하기</button>
-</div>
-
 <script>
-    const db = firebase.initializeApp({ databaseURL: "https://calc-f903b-default-rtdb.firebaseio.com/" }).database();
-    let settings = { rate: 0, pRate: 3, pFixed: 25, bRate: 5, bFixed: 40, bank: "" };
-    let mode = '페이', inputType = 'CNY';
-
-    db.ref('settings').on('value', (s) => {
-        settings = s.val();
-        document.getElementById('rateText').innerText = "오늘의 적용 환율: " + parseFloat(settings.rate).toLocaleString() + " 원";
-        runCalc();
-    });
-
-    // 관리자 페이지 이동 전 비밀번호 체크 (1978로 변경 완료)
-    function openAdmin() {
-        const password = prompt("관리자 비밀번호를 입력하세요:");
-        if (password === '1978') {
-            window.open('admin.html', '_blank');
-        } else if (password !== null) {
-            alert("비밀번호가 틀렸습니다. 접근할 수 없습니다.");
-        }
-    }
-
-    function changeMode(m) { mode = m; updateUI(); runCalc(); }
-    function changeInput(t) { inputType = t; updateUI(); runCalc(); }
-
-    function updateUI() {
-        document.getElementById('pBtn').className = (mode === '페이' ? 'tab-btn active' : 'tab-btn');
-        document.getElementById('bBtn').className = (mode === '구매' ? 'tab-btn active' : 'tab-btn');
-        document.getElementById('tabCNY').className = (inputType === 'CNY' ? 'sub-tab active' : 'sub-tab');
-        document.getElementById('tabKRW').className = (inputType === 'KRW' ? 'sub-tab active' : 'sub-tab');
-        document.getElementById('amt').placeholder = (inputType === 'CNY' ? '신청할 중국돈 금액 (위안)' : '보내실 한국돈 금액 (원)');
-    }
+    // ... (상단 설정 부분 동일)
 
     function runCalc() {
         const val = parseFloat(document.getElementById('amt').value) || 0;
-        let cny = 0, krw = 0, policy = "";
+        let cnyResult = 0, krw = 0, policy = ""; // cnyResult: 고객이 최종적으로 받는 위안화 합계
         
         const pRate = settings.pRate !== undefined ? settings.pRate : 3;
         const pFixed = settings.pFixed !== undefined ? settings.pFixed : 25;
@@ -87,34 +13,56 @@
         const feeLabel = (pRate <= 2.5) ? "특별 우대 수수료" : "기본 대행 수수료";
 
         if (inputType === 'CNY') {
-            cny = val;
+            const inputCNY = val;
             if (mode === '페이') {
-                if (cny >= 800) { krw = Math.floor(cny * settings.rate * (1 + pRate/100)); policy = `${feeLabel} (${pRate}%) 적용`; }
-                else { krw = Math.floor(cny * settings.rate) + (pFixed * settings.rate); policy = `800위안 미만 소액 고정 수수료 (${pFixed}위안) 적용`; }
+                if (inputCNY >= 800) { 
+                    cnyResult = inputCNY * (1 + pRate/100); // 수수료율만큼 합산
+                    krw = Math.floor(inputCNY * settings.rate * (1 + pRate/100)); 
+                    policy = `${feeLabel} (${pRate}%) 적용`; 
+                } else { 
+                    cnyResult = inputCNY + pFixed; // 고정 수수료 합산
+                    krw = Math.floor(inputCNY * settings.rate) + (pFixed * settings.rate); 
+                    policy = `800위안 미만 소액 고정 수수료 (${pFixed}위안) 적용`; 
+                }
             } else {
-                if (cny >= 800) { krw = Math.floor(cny * settings.rate * (1 + bRate/100)); policy = `기본 대행 수수료 (${bRate}%) 적용`; }
-                else { krw = Math.floor(cny * settings.rate) + (bFixed * settings.rate); policy = `800위안 미만 소액 고정 수수료 (${bFixed}위안) 적용`; }
+                // 구매 대행 로직 동일 적용
+                if (inputCNY >= 800) { 
+                    cnyResult = inputCNY * (1 + bRate/100);
+                    krw = Math.floor(inputCNY * settings.rate * (1 + bRate/100)); 
+                    policy = `기본 대행 수수료 (${bRate}%) 적용`; 
+                } else { 
+                    cnyResult = inputCNY + bFixed;
+                    krw = Math.floor(inputCNY * settings.rate) + (bFixed * settings.rate); 
+                    policy = `800위안 미만 소액 고정 수수료 (${bFixed}위안) 적용`; 
+                }
             }
         } else {
+            // 원화 입력 시
             krw = val;
-            let convertedCNY = val / settings.rate;
+            const converted = val / settings.rate;
             if (mode === '페이') {
-                if (convertedCNY >= 800) { cny = Math.floor(convertedCNY * (1 - pRate/100)); policy = `800위안 이상 원화기준 ${feeLabel}(${pRate}%) 선차감 후 정산`; }
-                else { cny = Math.floor(convertedCNY - pFixed); policy = `800위안 미만 원화기준 소액 고정수수료(${pFixed}위안) 선차감 후 정산`; }
+                if (converted >= 800) { 
+                    cnyResult = converted * (1 - pRate/100); 
+                    policy = `원화기준 ${feeLabel}(${pRate}%) 선차감 정산`; 
+                } else { 
+                    cnyResult = converted - pFixed; 
+                    policy = `원화기준 소액 고정수수료(${pFixed}위안) 선차감 정산`; 
+                }
             } else {
-                if (convertedCNY >= 800) { cny = Math.floor(convertedCNY * (1 - bRate/100)); policy = `800위안 이상 원화기준 수수료(${bRate}%) 선차감 후 정산`; }
-                else { cny = Math.floor(convertedCNY - bFixed); policy = `800위안 미만 원화기준 소액 고정수수료(${bFixed}위안) 선차감 후 정산`; }
+                if (converted >= 800) { 
+                    cnyResult = converted * (1 - bRate/100); 
+                    policy = `원화기준 수수료(${bRate}%) 선차감 정산`; 
+                } else { 
+                    cnyResult = converted - bFixed; 
+                    policy = `원화기준 소액 고정수수료(${bFixed}위안) 선차감 정산`; 
+                }
             }
         }
 
         document.getElementById('feeInfo').innerText = policy;
-        document.getElementById('res').innerHTML = `[차이나는형님 ${mode}대행 신청서]<br>--------------------------<br>• 신청 구분: ${inputType === 'CNY' ? '위안화' : '원화 맞춤 충전'} 신청<br>• 적용 환율: ${settings.rate} 원<br>• 수수료 정책: ${policy}<br>• 중국 송금액: ${cny.toLocaleString()} 위안 (CNY)<br>• 최종 입금액: ${krw.toLocaleString()} 원 (KRW)<br>--------------------------<br>• 입금 계좌: ${settings.bank}<br>--------------------------<br>※ 입금 후 본 신청서를 대화방에 붙여넣어 주시면 5분 내 초고속 처리됩니다! ⚡`;
+        // cnyResult를 소수점 없이 표기
+        document.getElementById('res').innerHTML = `[차이나는형님 ${mode}대행 신청서]<br>--------------------------<br>• 신청 구분: ${inputType === 'CNY' ? '위안화' : '원화 맞춤 충전'} 신청<br>• 적용 환율: ${settings.rate} 원<br>• 수수료 정책: ${policy}<br>• 최종 송금액: ${Math.floor(cnyResult).toLocaleString()} 위안 (CNY)<br>• 입금 하실 금액: ${krw.toLocaleString()} 원 (KRW)<br>--------------------------<br>• 입금 계좌: ${settings.bank}<br>--------------------------<br>※ 입금 후 본 신청서를 대화방에 붙여넣어 주시면 5분 내 초고속 처리됩니다! ⚡`;
     }
 
-    function copyRes() {
-        navigator.clipboard.writeText(document.getElementById('res').innerText);
-        alert("신청서가 복사되었습니다!");
-    }
+    // ... (나머지 하단 코드 동일)
 </script>
-</body>
-</html>
