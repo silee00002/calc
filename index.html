@@ -9,7 +9,7 @@
     <style>
         body { font-family: 'Malgun Gothic', sans-serif; background: #f4f4f4; display: flex; justify-content: center; padding: 10px; margin: 0; }
         .card { background: #fff; width: 95%; max-width: 500px; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); box-sizing: border-box; }
-        .title { text-align: center; font-size: 1.3em; font-weight: bold; margin-bottom: 20px; }
+        .title { text-align: center; font-size: 1.3em; font-weight: bold; margin-bottom: 20px; user-select: none; }
         .tabs { display: flex; gap: 5px; margin-bottom: 20px; border: 1px solid #ddd; padding: 5px; border-radius: 8px; }
         .tab-btn { flex: 1; padding: 12px; border: none; background: #eee; cursor: pointer; font-weight: bold; border-radius: 5px; }
         .tab-btn.active { background: #fff; border: 1px solid #ddd; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
@@ -25,7 +25,9 @@
 </head>
 <body>
 <div class="card">
-    <div class="title">⚡ 차이나는형님 대행 계산기</div>
+    <div class="title">
+        <span onclick="window.open('admin.html', '_blank')" style="cursor: pointer;">⚡</span> 차이나는형님 대행 계산기
+    </div>
     <div class="tabs">
         <button id="pBtn" class="tab-btn active" onclick="changeMode('페이')">💰 페이대행</button>
         <button id="bBtn" class="tab-btn" onclick="changeMode('구매')">📦 구매대행</button>
@@ -67,57 +69,31 @@
         const val = parseFloat(document.getElementById('amt').value) || 0;
         let cny = 0, krw = 0, policy = "";
         
-        // 실시간 연동 변수 (어드민 설정값 매칭)
         const pRate = settings.pRate !== undefined ? settings.pRate : 3;
         const pFixed = settings.pFixed !== undefined ? settings.pFixed : 25;
         const bRate = settings.bRate !== undefined ? settings.bRate : 5;
         const bFixed = settings.bFixed !== undefined ? settings.bFixed : 40;
 
-        // 변동 수수료에 따른 명칭 자동 분기 처리
         const feeLabel = (pRate <= 2.5) ? "특별 우대 수수료" : "기본 대행 수수료";
 
         if (inputType === 'CNY') {
             cny = val;
             if (mode === '페이') {
-                if (cny >= 800) { 
-                    krw = Math.floor(cny * settings.rate * (1 + pRate/100)); 
-                    policy = `${feeLabel} (${pRate}%) 적용`; 
-                }
-                else { 
-                    krw = Math.floor(cny * settings.rate) + (pFixed * settings.rate); 
-                    policy = `800위안 미만 소액 고정 수수료 (${pFixed}위안) 적용`; 
-                }
+                if (cny >= 800) { krw = Math.floor(cny * settings.rate * (1 + pRate/100)); policy = `${feeLabel} (${pRate}%) 적용`; }
+                else { krw = Math.floor(cny * settings.rate) + (pFixed * settings.rate); policy = `800위안 미만 소액 고정 수수료 (${pFixed}위안) 적용`; }
             } else {
-                if (cny >= 800) { 
-                    krw = Math.floor(cny * settings.rate * (1 + bRate/100)); 
-                    policy = `기본 대행 수수료 (${bRate}%) 적용`; 
-                }
-                else { 
-                    krw = Math.floor(cny * settings.rate) + (bFixed * settings.rate); 
-                    policy = `800위안 미만 소액 고정 수수료 (${bFixed}위안) 적용`; 
-                }
+                if (cny >= 800) { krw = Math.floor(cny * settings.rate * (1 + bRate/100)); policy = `기본 대행 수수료 (${bRate}%) 적용`; }
+                else { krw = Math.floor(cny * settings.rate) + (bFixed * settings.rate); policy = `800위안 미만 소액 고정 수수료 (${bFixed}위안) 적용`; }
             }
         } else {
             krw = val;
             let convertedCNY = val / settings.rate;
             if (mode === '페이') {
-                if (convertedCNY >= 800) { 
-                    cny = Math.floor(convertedCNY * (1 - pRate/100)); 
-                    policy = `800위안 이상 원화기준 ${feeLabel}(${pRate}%) 선차감 후 정산`; 
-                }
-                else { 
-                    cny = Math.floor(convertedCNY - pFixed); 
-                    policy = `800위안 미만 원화기준 소액 고정수수료(${pFixed}위안) 선차감 후 정산`; 
-                }
+                if (convertedCNY >= 800) { cny = Math.floor(convertedCNY * (1 - pRate/100)); policy = `800위안 이상 원화기준 ${feeLabel}(${pRate}%) 선차감 후 정산`; }
+                else { cny = Math.floor(convertedCNY - pFixed); policy = `800위안 미만 원화기준 소액 고정수수료(${pFixed}위안) 선차감 후 정산`; }
             } else {
-                if (convertedCNY >= 800) { 
-                    cny = Math.floor(convertedCNY * (1 - bRate/100)); 
-                    policy = `800위안 이상 원화기준 수수료(${bRate}%) 선차감 후 정산`; 
-                }
-                else { 
-                    cny = Math.floor(convertedCNY - bFixed); 
-                    policy = `800위안 미만 원화기준 소액 고정수수료(${bFixed}위안) 선차감 후 정산`; 
-                }
+                if (convertedCNY >= 800) { cny = Math.floor(convertedCNY * (1 - bRate/100)); policy = `800위안 이상 원화기준 수수료(${bRate}%) 선차감 후 정산`; }
+                else { cny = Math.floor(convertedCNY - bFixed); policy = `800위안 미만 원화기준 소액 고정수수료(${bFixed}위안) 선차감 후 정산`; }
             }
         }
 
