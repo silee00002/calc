@@ -26,7 +26,7 @@
 <body>
 <div class="card">
     <div class="title">
-        <span onclick="window.open('admin.html', '_blank')" style="cursor: pointer;">⚡</span> 차이나는형님 대행 계산기
+        <span onclick="openAdmin()" style="cursor: pointer;">⚡</span> 차이나는형님 대행 계산기
     </div>
     <div class="tabs">
         <button id="pBtn" class="tab-btn active" onclick="changeMode('페이')">💰 페이대행</button>
@@ -53,6 +53,16 @@
         document.getElementById('rateText').innerText = "오늘의 적용 환율: " + parseFloat(settings.rate).toLocaleString() + " 원";
         runCalc();
     });
+
+    // 관리자 페이지 이동 전 비밀번호 체크 (1978로 변경 완료)
+    function openAdmin() {
+        const password = prompt("관리자 비밀번호를 입력하세요:");
+        if (password === '1978') {
+            window.open('admin.html', '_blank');
+        } else if (password !== null) {
+            alert("비밀번호가 틀렸습니다. 접근할 수 없습니다.");
+        }
+    }
 
     function changeMode(m) { mode = m; updateUI(); runCalc(); }
     function changeInput(t) { inputType = t; updateUI(); runCalc(); }
