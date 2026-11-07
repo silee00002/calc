@@ -45,7 +45,7 @@
 
 <script>
     const db = firebase.initializeApp({ databaseURL: "https://calc-f903b-default-rtdb.firebaseio.com/" }).database();
-    let settings = { rate: 0, pRate: 3, pFixed: 25, bRate: 5, bFixed: 40, bank: "" };
+    let settings = { rate: 0, bank: "" };
     let mode = '페이', inputType = 'CNY';
 
     db.ref('settings').on('value', (s) => {
@@ -79,34 +79,33 @@
         const val = parseFloat(document.getElementById('amt').value) || 0;
         let cnyResult = 0, krw = 0, policy = "", originalCNY = 0; 
         
-        const pRate = settings.pRate !== undefined ? settings.pRate : 3;
-        const pFixed = settings.pFixed !== undefined ? settings.pFixed : 25;
-        const bRate = settings.bRate !== undefined ? settings.bRate : 5;
-        const bFixed = settings.bFixed !== undefined ? settings.bFixed : 40;
-
-        const feeLabel = (pRate <= 2.5) ? "특별 우대 수수료" : "기본 대행 수수료";
+        // 변경된 수수료 정책 기준 값 설정
+        const pRate = 3;
+        const pFixed = 30;
+        const bRate = 5;
+        const bFixed = 50;
 
         if (inputType === 'CNY') {
             originalCNY = val; // 입력받은 원래 위안화 금액 저장
             if (mode === '페이') {
-                if (originalCNY >= 800) { 
+                if (originalCNY >= 1000) { 
                     cnyResult = originalCNY * (1 + pRate/100); 
                     krw = Math.floor(originalCNY * settings.rate * (1 + pRate/100)); 
-                    policy = `${feeLabel} (${pRate}%) 적용`; 
+                    policy = `기본 대행 수수료 (${pRate}%) 적용`; 
                 } else { 
                     cnyResult = originalCNY + pFixed; 
                     krw = Math.floor(originalCNY * settings.rate) + (pFixed * settings.rate); 
-                    policy = `800위안 미만 소액 고정 수수료 (${pFixed}위안) 적용`; 
+                    policy = `1,000위안 미만 소액 고정 수수료 (${pFixed}위안) 적용`; 
                 }
             } else {
-                if (originalCNY >= 800) { 
+                if (originalCNY >= 1000) { 
                     cnyResult = originalCNY * (1 + bRate/100);
                     krw = Math.floor(originalCNY * settings.rate * (1 + bRate/100)); 
                     policy = `기본 대행 수수료 (${bRate}%) 적용`; 
                 } else { 
                     cnyResult = originalCNY + bFixed;
                     krw = Math.floor(originalCNY * settings.rate) + (bFixed * settings.rate); 
-                    policy = `800위안 미만 소액 고정 수수료 (${bFixed}위안) 적용`; 
+                    policy = `1,000위안 이하 소액 고정 수수료 (${bFixed}위안) 적용`; 
                 }
             }
         } else {
@@ -114,15 +113,15 @@
             const converted = val / settings.rate;
             originalCNY = Math.floor(converted); // 원화 입력 시 역산된 기본 위안화 금액
             if (mode === '페이') {
-                if (converted >= 800) { 
+                if (converted >= 1000) { 
                     cnyResult = converted * (1 - pRate/100); 
-                    policy = `원화기준 ${feeLabel}(${pRate}%) 선차감 정산`; 
+                    policy = `원화기준 수수료(${pRate}%) 선차감 정산`; 
                 } else { 
                     cnyResult = converted - pFixed; 
                     policy = `원화기준 소액 고정수수료(${pFixed}위안) 선차감 정산`; 
                 }
             } else {
-                if (converted >= 800) { 
+                if (converted >= 1000) { 
                     cnyResult = converted * (1 - bRate/100); 
                     policy = `원화기준 수수료(${bRate}%) 선차감 정산`; 
                 } else { 
@@ -134,7 +133,6 @@
 
         document.getElementById('feeInfo').innerText = policy;
         
-        // 수수료 포함 환전금액 바로 위에 '환전 요청금액' 항목을 추가했습니다.
         document.getElementById('res').innerHTML = `[차이나는형님 ${mode}대행 신청서]<br>--------------------------<br>• 신청 구분: ${inputType === 'CNY' ? '위안화' : '원화 맞춤 충전'} 신청<br>• 적용 환율: ${settings.rate} 원<br>• 수수료 정책: ${policy}<br>• 환전 요청금액: ${originalCNY.toLocaleString()} 위안 (CNY)<br>• 수수료 포함 환전금액: ${Math.floor(cnyResult).toLocaleString()} 위안 (CNY)<br>• 입금 하실 금액: ${krw.toLocaleString()} 원 (KRW)<br>--------------------------<br>• 입금 계좌: ${settings.bank}<br>--------------------------<br>※ 입금 후 본 신청서를 대화방에 붙여넣어 주시면 5분 내 초고속 처리됩니다! ⚡`;
     }
 
