@@ -109,7 +109,7 @@
                 if (originalCNY >= 1000) { 
                     cnyResult = originalCNY * (1 + bRate/100);
                     krw = Math.floor(originalCNY * exchangeRate * (1 + bRate/100)); 
-                    policy = `기본 대행 수수료 (${bRate}%) 적용`; 
+                    policy = `특별 우대 수수료 (${bRate}%) 적용`; 
                 } else { 
                     cnyResult = originalCNY + bFixed;
                     krw = Math.floor(originalCNY * exchangeRate) + (bFixed * exchangeRate); 
