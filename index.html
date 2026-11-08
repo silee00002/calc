@@ -45,12 +45,18 @@
 
 <script>
     const db = firebase.initializeApp({ databaseURL: "https://calc-f903b-default-rtdb.firebaseio.com/" }).database();
-    let settings = { rate: 0, bank: "" };
+    
+    // 기본 설정값 초기화 (관리자 페이지 연동 전 안전장치)
+    let settings = { rate: 0, pRate: 3, pFixed: 30, bRate: 5, bFixed: 50, bank: "" };
     let mode = '페이', inputType = 'CNY';
 
+    // Firebase 데이터베이스에서 실시간 설정값 불러오기
     db.ref('settings').on('value', (s) => {
-        settings = s.val();
-        document.getElementById('rateText').innerText = "오늘의 적용 환율: " + parseFloat(settings.rate).toLocaleString() + " 원";
+        const val = s.val();
+        if (val) {
+            settings = val;
+        }
+        document.getElementById('rateText').innerText = "오늘의 적용 환율: " + parseFloat(settings.rate || 0).toLocaleString() + " 원";
         runCalc();
     });
 
@@ -79,39 +85,41 @@
         const val = parseFloat(document.getElementById('amt').value) || 0;
         let cnyResult = 0, krw = 0, policy = "", originalCNY = 0; 
         
-        // 변경된 수수료 정책 기준 값 설정
-        const pRate = 3;
-        const pFixed = 30;
-        const bRate = 5;
-        const bFixed = 50;
+        // 관리자 페이지에서 설정한 값이 우선 적용되도록 연동 (데이터가 없으면 기본값 사용)
+        const pRate = settings.pRate !== undefined ? parseFloat(settings.pRate) : 3;
+        const pFixed = settings.pFixed !== undefined ? parseFloat(settings.pFixed) : 30;
+        const bRate = settings.bRate !== undefined ? parseFloat(settings.bRate) : 5;
+        const bFixed = settings.bFixed !== undefined ? parseFloat(settings.bFixed) : 50;
+
+        const exchangeRate = parseFloat(settings.rate) || 0;
 
         if (inputType === 'CNY') {
-            originalCNY = val; // 입력받은 원래 위안화 금액 저장
+            originalCNY = val; 
             if (mode === '페이') {
                 if (originalCNY >= 1000) { 
                     cnyResult = originalCNY * (1 + pRate/100); 
-                    krw = Math.floor(originalCNY * settings.rate * (1 + pRate/100)); 
+                    krw = Math.floor(originalCNY * exchangeRate * (1 + pRate/100)); 
                     policy = `기본 대행 수수료 (${pRate}%) 적용`; 
                 } else { 
                     cnyResult = originalCNY + pFixed; 
-                    krw = Math.floor(originalCNY * settings.rate) + (pFixed * settings.rate); 
+                    krw = Math.floor(originalCNY * exchangeRate) + (pFixed * exchangeRate); 
                     policy = `1,000위안 미만 소액 고정 수수료 (${pFixed}위안) 적용`; 
                 }
             } else {
                 if (originalCNY >= 1000) { 
                     cnyResult = originalCNY * (1 + bRate/100);
-                    krw = Math.floor(originalCNY * settings.rate * (1 + bRate/100)); 
+                    krw = Math.floor(originalCNY * exchangeRate * (1 + bRate/100)); 
                     policy = `기본 대행 수수료 (${bRate}%) 적용`; 
                 } else { 
                     cnyResult = originalCNY + bFixed;
-                    krw = Math.floor(originalCNY * settings.rate) + (bFixed * settings.rate); 
+                    krw = Math.floor(originalCNY * exchangeRate) + (bFixed * exchangeRate); 
                     policy = `1,000위안 이하 소액 고정 수수료 (${bFixed}위안) 적용`; 
                 }
             }
         } else {
             krw = val;
-            const converted = val / settings.rate;
-            originalCNY = Math.floor(converted); // 원화 입력 시 역산된 기본 위안화 금액
+            const converted = exchangeRate > 0 ? val / exchangeRate : 0;
+            originalCNY = Math.floor(converted); 
             if (mode === '페이') {
                 if (converted >= 1000) { 
                     cnyResult = converted * (1 - pRate/100); 
@@ -133,7 +141,7 @@
 
         document.getElementById('feeInfo').innerText = policy;
         
-        document.getElementById('res').innerHTML = `[차이나는형님 ${mode}대행 신청서]<br>--------------------------<br>• 신청 구분: ${inputType === 'CNY' ? '위안화' : '원화 맞춤 충전'} 신청<br>• 적용 환율: ${settings.rate} 원<br>• 수수료 정책: ${policy}<br>• 환전 요청금액: ${originalCNY.toLocaleString()} 위안 (CNY)<br>• 수수료 포함 환전금액: ${Math.floor(cnyResult).toLocaleString()} 위안 (CNY)<br>• 입금 하실 금액: ${krw.toLocaleString()} 원 (KRW)<br>--------------------------<br>• 입금 계좌: ${settings.bank}<br>--------------------------<br>※ 입금 후 본 신청서를 대화방에 붙여넣어 주시면 5분 내 초고속 처리됩니다! ⚡`;
+        document.getElementById('res').innerHTML = `[차이나는형님 ${mode}대행 신청서]<br>--------------------------<br>• 신청 구분: ${inputType === 'CNY' ? '위안화' : '원화 맞춤 충전'} 신청<br>• 적용 환율: ${exchangeRate} 원<br>• 수수료 정책: ${policy}<br>• 환전 요청금액: ${originalCNY.toLocaleString()} 위안 (CNY)<br>• 수수료 포함 환전금액: ${Math.floor(cnyResult).toLocaleString()} 위안 (CNY)<br>• 입금 하실 금액: ${krw.toLocaleString()} 원 (KRW)<br>--------------------------<br>• 입금 계좌: ${settings.bank || ''}<br>--------------------------<br>※ 입금 후 본 신청서를 대화방에 붙여넣어 주시면 5분 내 초고속 처리됩니다! ⚡`;
     }
 
     function copyRes() {
